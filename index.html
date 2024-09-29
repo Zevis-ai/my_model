@@ -2,18 +2,18 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>זיהוי תמונות בזמן אמת</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f0f0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
@@ -24,19 +24,22 @@
             color: #2c3e50;
             margin-bottom: 20px;
             text-align: center;
+            font-size: 24px;
         }
-        #start-button, #camera-permission-button {
+        #camera-permission-button, #start-button {
             background-color: #3498db;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 25px;
             transition: background-color 0.3s;
             margin: 10px 0;
+            width: 100%;
+            max-width: 300px;
         }
-        #start-button:hover, #camera-permission-button:hover {
+        #camera-permission-button:hover, #start-button:hover {
             background-color: #2980b9;
         }
         #webcam-container {
@@ -45,6 +48,10 @@
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             max-width: 100%;
+        }
+        #webcam-container canvas {
+            width: 100% !important;
+            height: auto !important;
         }
         #label-container {
             background-color: white;
@@ -63,10 +70,12 @@
         .prediction-label {
             flex: 1;
             text-align: right;
+            font-size: 14px;
         }
         .prediction-value {
             flex: 0 0 50px;
             text-align: left;
+            font-size: 14px;
         }
         .prediction-bar-fill {
             height: 20px;
@@ -78,13 +87,14 @@
             margin-top: 10px;
             text-align: center;
             font-weight: bold;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
     <h1>זיהוי תמונות בזמן אמת</h1>
-    <button id="camera-permission-button" onclick="requestCameraPermission()">אשר גישה למצלמה</button>
-    <button id="start-button" onclick="startPrediction()" style="display: none;">התחל זיהוי</button>
+    <button id="camera-permission-button">אשר גישה למצלמה</button>
+    <button id="start-button" style="display: none;">התחל זיהוי</button>
     <div id="status-message"></div>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
@@ -94,9 +104,14 @@
         let model, webcam, labelContainer, maxPredictions;
         let isCameraReady = false;
 
+        document.getElementById('camera-permission-button').addEventListener('click', requestCameraPermission);
+        document.getElementById('start-button').addEventListener('click', startPrediction);
+
         async function requestCameraPermission() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
                 document.getElementById('status-message').textContent = 'גישה למצלמה אושרה!';
                 document.getElementById('camera-permission-button').style.display = 'none';
                 document.getElementById('start-button').style.display = 'block';
@@ -121,13 +136,14 @@
         async function init() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            const flip = true;
-            webcam = new tmImage.Webcam(400, 400, flip);
+            
             try {
-                await webcam.setup();
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                const flip = false; // שימוש במצלמה האחורית
+                webcam = new tmImage.Webcam(300, 300, flip);
+                await webcam.setup({ facingMode: "environment" });
                 await webcam.play();
                 window.requestAnimationFrame(loop);
 
@@ -138,8 +154,8 @@
                 }
                 document.getElementById('status-message').textContent = 'מזהה תמונות...';
             } catch (error) {
-                console.error("שגיאה בהפעלת המצלמה: ", error);
-                document.getElementById('status-message').textContent = 'אירעה שגיאה בהפעלת המצלמה. אנא נסה שוב.';
+                console.error("שגיאה בהפעלת המודל או המצלמה: ", error);
+                document.getElementById('status-message').textContent = 'אירעה שגיאה בטעינת המודל או בהפעלת המצלמה. אנא נסה שוב.';
             }
         }
 
