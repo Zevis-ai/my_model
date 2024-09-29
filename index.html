@@ -14,15 +14,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
             color: #333;
+            box-sizing: border-box;
         }
         h1 {
             color: #2c3e50;
             margin-bottom: 20px;
+            text-align: center;
         }
-        #start-button {
+        #start-button, #camera-permission-button {
             background-color: #3498db;
             color: white;
             border: none;
@@ -31,8 +34,9 @@
             cursor: pointer;
             border-radius: 5px;
             transition: background-color 0.3s;
+            margin: 10px 0;
         }
-        #start-button:hover {
+        #start-button:hover, #camera-permission-button:hover {
             background-color: #2980b9;
         }
         #webcam-container {
@@ -40,6 +44,7 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
         }
         #label-container {
             background-color: white;
@@ -47,7 +52,7 @@
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-top: 20px;
-            width: 80%;
+            width: 100%;
             max-width: 400px;
         }
         .prediction-bar {
@@ -69,17 +74,49 @@
             border-radius: 10px;
             transition: width 0.3s ease;
         }
+        #status-message {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>זיהוי תמונות בזמן אמת</h1>
-    <button id="start-button" onclick="init()">התחל זיהוי</button>
+    <button id="camera-permission-button" onclick="requestCameraPermission()">אשר גישה למצלמה</button>
+    <button id="start-button" onclick="startPrediction()" style="display: none;">התחל זיהוי</button>
+    <div id="status-message"></div>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
 
     <script type="text/javascript">
         const URL = "./my_model/";
         let model, webcam, labelContainer, maxPredictions;
+        let isCameraReady = false;
+
+        async function requestCameraPermission() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('status-message').textContent = 'גישה למצלמה אושרה!';
+                document.getElementById('camera-permission-button').style.display = 'none';
+                document.getElementById('start-button').style.display = 'block';
+                isCameraReady = true;
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error("שגיאה בגישה למצלמה: ", error);
+                document.getElementById('status-message').textContent = 'לא ניתן לגשת למצלמה. אנא ודא שיש לך הרשאות מתאימות.';
+            }
+        }
+
+        async function startPrediction() {
+            if (!isCameraReady) {
+                alert('אנא אשר גישה למצלמה תחילה.');
+                return;
+            }
+            document.getElementById('start-button').style.display = 'none';
+            document.getElementById('status-message').textContent = 'טוען את המודל...';
+            await init();
+        }
 
         async function init() {
             const modelURL = URL + "model.json";
@@ -99,9 +136,10 @@
                 for (let i = 0; i < maxPredictions; i++) {
                     labelContainer.appendChild(document.createElement("div"));
                 }
+                document.getElementById('status-message').textContent = 'מזהה תמונות...';
             } catch (error) {
-                console.error("שגיאה בגישה למצלמה: ", error);
-                alert("לא ניתן לגשת למצלמה. אנא ודא שיש לך הרשאות מתאימות.");
+                console.error("שגיאה בהפעלת המצלמה: ", error);
+                document.getElementById('status-message').textContent = 'אירעה שגיאה בהפעלת המצלמה. אנא נסה שוב.';
             }
         }
 
