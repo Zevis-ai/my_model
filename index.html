@@ -6,6 +6,17 @@
     <title>Teachable Machine Image Model</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        #webcam-container {
+            text-align: center;
+            margin: 20px auto;
+            width: 200px; /* Adjust as necessary */
+        }
+        #label-container {
+            text-align: center;
+            margin: 10px auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Teachable Machine Image Model</h1>
@@ -14,12 +25,10 @@
     <div id="label-container"></div>
 
     <script type="text/javascript">
-        // URL of your model directory
         const URL = "./my_model/";
 
         let model, webcam, labelContainer, maxPredictions;
 
-        // Load the image model and setup the webcam
         async function init() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
@@ -28,10 +37,9 @@
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
-            // Convenience function to setup a webcam
-            const flip = true; // whether to flip the webcam
+            // Setup the webcam
+            const flip = true; 
             webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-
             try {
                 await webcam.setup(); // request access to the webcam
                 await webcam.play();
@@ -50,18 +58,17 @@
         }
 
         async function loop() {
-            webcam.update(); // update the webcam frame
-            await predict();
+            webcam.update(); // Update the webcam frame
+            await predict(); // Run prediction on the webcam image
             window.requestAnimationFrame(loop);
         }
 
-        // Run the webcam image through the image model
         async function predict() {
-            const prediction = await model.predict(webcam.canvas);
+            const prediction = await model.predict(webcam.canvas); // Run the webcam image through the model
             for (let i = 0; i < maxPredictions; i++) {
                 const classPrediction =
                     prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
+                labelContainer.childNodes[i].innerHTML = classPrediction; // Display predictions
             }
         }
     </script>
